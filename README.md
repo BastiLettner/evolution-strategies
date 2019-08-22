@@ -25,4 +25,66 @@ pip install -e setup.py
 ```
 
 Since the implementation is ray based it requires a ray cluster.
-The example shows how to run the algorithm for a simple function on a single node.
+Here is a small example which shows how to run the algorithm for a simple function on a single node.  
+First, we create a dummy fitness function using the interface.
+```python
+class Quadratic(Fitness):
+
+    def evaluate(self, params):
+        return float(-(params[0] - 5)**2)
+
+    def get_initial_solution(self):
+        return np.array([0.0], dtype=np.float32)
+```
+The we initialize the ray cluster. Note, that we limit the *object store size* to 100mb.
+Also, we set the size of the noise table which would otherwise default to 2.5gb.
+This setup should be executable on any machine.
+
+```python
+def main():
+
+    ray.init(num_cpus=2, object_store_memory=int(1e8))
+
+    config = ESConfig(
+        fitness_config={},
+        noise_size=int(1e7),
+        num_workers=2,
+        step_size=0.5
+    )
+
+    trainer = ESTrainer(config=config, fitness_object_creator=lambda : Quadratic())
+    trainer.train(num_steps=50)
+
+    print("Final Solution {}".format(trainer.solution_state.get_current_solution()[0]))
+```
+
+## Configuration
+This section shows the available configuration parameters. 
+Note, that the configuration of the Ray Cluster will not be covered.
+But their documentation explains it well (https://ray.readthedocs.io/en/latest/walkthrough.html#).
+
+```python
+fitness_config(`dict`): Has to be json serializable. These parameters will be forwarded to the 
+                        create_fitness_object function passed to the ESTrainer.
+training_steps(`int`): Number of training steps to perform
+step_size(`float`): Learning rate of the optimizer.
+noise_size(`int`): Size of the noise table
+num_workers(`int`): Number of workers.
+evaluations_per_batch(`int`): Number of times the objective function is evaluated before calculating an
+                              update.
+noise_std_dev(`float`): Standard deviation of the noise added to the params during perturbation
+experiment_dir(`str`): Path to a dir where training statistics will be stored. The dir must not exist yet.
+                       If None, nothing will be saved
+save_t(`int`): number of training steps between saving the solution. if 0, solutions are never saved.
+               Note, that the experiment_dir parameter must not be None in order to save.
+```
+
+
+## Saving Statistics
+
+The ESTrainer keeps track of some training statistics which can be save to and h5 file.
+Also the solution can be saved periodically (h5).  
+The `experiment_dir` parameter must be set in the configuration.
+To save the solutions, use the parameter `save_t`.
+
+

@@ -1,6 +1,9 @@
 # Utility for ES
 
+import os
 import numpy as np
+import h5py
+import matplotlib.pyplot as plt
 
 
 class SolutionState(object):
@@ -113,3 +116,37 @@ def batched_weighted_sum(weights, vecs, batch_size):
             np.asarray(batch_vecs, dtype=np.float32))
         num_items_summed += len(batch_weights)
     return total, num_items_summed
+
+
+def plot_training_log(path, save=None, show=False):
+    """
+    Plot the training statistics. The plots will be saved, if save arg is not None, and optionally displayed
+    Args:
+        path(`str`): Path to the training log file.
+        save(`str`): Directory to save the plots. If none, they won't be saved.
+        show(`bool`): Show the plots?
+
+    Returns:
+
+    """
+    info = {
+        "weights_norm": {'ylabel': 'l2', 'label': 'solution vector norm'},
+        "grad_norm": {'ylabel': 'l2', 'label': 'gradient norm'},
+        "update_ratio": {'ylabel': 'relative change l2', 'label': 'update ration'},
+        "episodes_this_iter": {'ylabel': 'episodes per step', 'label': None},
+        "episodes_so_far": {'ylabel': 'evaluations', 'label': None},
+        "episode_reward_mean": {'ylabel': 'mean reward', 'label': None}
+    }
+    data = h5py.File(path, 'r')
+
+    for key, value in data.items():
+
+        plt.plot(value, label=info[key]['label'])
+        plt.xlabel('training steps')
+        plt.ylabel(info[key]['ylabel'])
+        plt.legend()
+        if save is not None:
+            plt.savefig(os.path.join(save, key + '.pdf'))
+        if show:
+            plt.show()
+    data.close()

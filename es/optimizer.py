@@ -37,7 +37,7 @@ class Optimizer(object):
         self.t += 1
         step = self._compute_step(globalg)
         theta = self.sol.get_current_solution()
-        ratio = np.linalg.norm(step) / np.linalg.norm(theta)
+        ratio = np.linalg.norm(step) / (np.linalg.norm(theta) + 1e-8)
         return theta + step, ratio
 
     def _compute_step(self, globalg):

@@ -8,7 +8,7 @@ from collections import namedtuple
 from .noise import SharedNoiseTable
 
 
-Result = namedtuple("Result", ["noise_indices", "noisy_returns", "sign_noisy_returns"])
+Result = namedtuple("Result", ["noise_indices", "returns", "sign_noisy_returns"])
 
 
 @ray.remote
@@ -20,29 +20,32 @@ class Worker(object):
                  config,
                  fitness_object_creator,
                  noise,
-                 min_task_runtime):
+                 solution_size,
+                 min_task_runtime=0.2):
         """
 
         Args:
             config(`ESConfig`): Config container
             fitness_object_creator(`function`): Creates the fitness object
             noise(`np.array`): The noise array (shared between workers)
+            solution_size(`int`): Size of each solution
             min_task_runtime(`float`): Min runtime for a rollout in seconds
         """
         self.min_task_runtime = min_task_runtime
         self.config = config
-
+        self.solution_size = solution_size
         self.noise = SharedNoiseTable(noise)
-        self.fitness = fitness_object_creator(**config["fitness_config"])
+        self.fitness = fitness_object_creator(**config.fitness_config)
 
     def do_rollouts(self, params):
         """
+        Perform evaluations using the provided params.
 
         Args:
-            params:
+            params(`np.array`): The parameters this worker should use for evaluation
 
         Returns:
-
+            Result(`named_tuple`)
         """
         noise_indices, returns, sign_returns = [], [], []
 
@@ -50,22 +53,22 @@ class Worker(object):
         task_t_start = time.time()
         while len(noise_indices) == 0 or time.time() - task_t_start < self.min_task_runtime:
 
-                noise_index = self.noise.sample_index(dim=self.fitness.size)
+                noise_index = self.noise.sample_index(dim=self.solution_size)
 
-                perturbation = self.config.noise_std_dev * self.noise.get(noise_index, self.fitness.size)
+                perturbation = self.config.noise_std_dev * self.noise.get(noise_index, self.solution_size)
 
                 rewards_pos = self.fitness.evaluate(params + perturbation)
 
                 rewards_neg = self.fitness.evaluate(params - perturbation)
 
                 noise_indices.append(noise_index)
-                returns.append([rewards_pos.sum(), rewards_neg.sum()])
+                returns.append([rewards_pos, rewards_neg])
                 sign_returns.append(
-                    [np.sign(rewards_pos).sum(),
-                     np.sign(rewards_neg).sum()])
+                    [np.sign(rewards_pos),
+                     np.sign(rewards_neg)])
 
         return Result(
             noise_indices=noise_indices,
-            noisy_returns=returns,
+            returns=returns,
             sign_noisy_returns=sign_returns
         )

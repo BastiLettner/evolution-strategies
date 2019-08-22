@@ -7,7 +7,9 @@ setup(
     version="1.0",
     install_requires=[
         'numpy',
-        'ray'
+        'ray',
+        'lz4',  # recommended by ray for performance
+        'matplotlib'
     ],
     description="Simplified implementation of ES with ray with different interface",
     author="sebastian-lettner",
