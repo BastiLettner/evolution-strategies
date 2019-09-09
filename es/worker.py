@@ -11,7 +11,7 @@ from .noise import SharedNoiseTable
 Result = namedtuple("Result", ["noise_indices", "returns", "sign_noisy_returns"])
 
 
-@ray.remote
+@ray.remote(num_cpus=1)
 class Worker(object):
 
     """ ES Worker. Executed (potentially) distributed with the help of Ray """
