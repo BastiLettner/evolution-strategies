@@ -97,15 +97,15 @@ class ESTrainer(object):
 
         # Create the shared noise table.
         print("Creating shared noise table.")
-        noise_id = create_shared_noise.remote(config.noise_size)
-        self.noise = SharedNoiseTable(ray.get(noise_id))
+        self.noise_id = create_shared_noise.remote(config.noise_size)
+        self.noise = SharedNoiseTable(ray.get(self.noise_id))
 
         # Create the actors.
         print("Creating actors.")
         rng = np.random.RandomState(config.seed)
         worker_seeds = [rng.randint(0, 100000000) for _ in range(config.num_workers)]
         self._workers = [
-            Worker.remote(worker_seeds[i], config, fitness_object_creator, noise_id, self.solution_state.size)
+            Worker.remote(worker_seeds[i], config, fitness_object_creator, self.noise_id, self.solution_state.size)
             for i in range(config.num_workers)
         ]
 
@@ -216,7 +216,7 @@ class ESTrainer(object):
         self.solution_state.set_solution(theta)
         # Store the rewards
         self.reward_list += list(returns)
-        reward_mean = np.mean(self.reward_list)
+        reward_mean = np.mean(returns)
         info = {
             "weights_norm": np.square(theta).sum(),
             "grad_norm": np.square(g).sum(),
