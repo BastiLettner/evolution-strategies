@@ -98,13 +98,15 @@ class ESTrainer(object):
         # Create the shared noise table.
         print("Creating shared noise table.")
         noise_id = create_shared_noise.remote(config.noise_size)
-        self.noise = SharedNoiseTable(ray.get(noise_id), seed=config.seed)
+        self.noise = SharedNoiseTable(ray.get(noise_id))
 
         # Create the actors.
         print("Creating actors.")
+        rng = np.random.RandomState(config.seed)
+        worker_seeds = [rng.randint(0, 100000000) for _ in range(config.num_workers)]
         self._workers = [
-            Worker.remote(config, fitness_object_creator, noise_id, self.solution_state.size)
-            for _ in range(config.num_workers)
+            Worker.remote(worker_seeds[i], config, fitness_object_creator, noise_id, self.solution_state.size)
+            for i in range(config.num_workers)
         ]
 
         self.episodes_so_far = 0

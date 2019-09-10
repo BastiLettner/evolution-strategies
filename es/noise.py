@@ -27,7 +27,7 @@ def create_shared_noise(count):
 
 
 class SharedNoiseTable(object):
-    def __init__(self, noise, seed=1):
+    def __init__(self, noise):
         """
         Construct Noise table.
 
@@ -35,7 +35,6 @@ class SharedNoiseTable(object):
             noise(`np.array`): The noise array
         """
         self.noise = noise
-        self.random = np.random.RandomState(seed=seed)
         assert self.noise.dtype == np.float32
 
     def get(self, i, dim):
@@ -51,15 +50,15 @@ class SharedNoiseTable(object):
         """
         return self.noise[i:i + dim]
 
-    def sample_index(self, dim):
+    def sample_index(self, dim, rng):
         """
         Get an index. It will be sampled randomly without seeding.
 
         Args:
             dim(`int`): This parameter makes sure we don't sample an index to close to the end of the array
                         to make sure we can take out single chunck of size dim using the returned index.
-
+            rng(`np.random.RandomState`): RNG passed in by each worker to make reproducible
         Returns:
             index(`int`)
         """
-        return self.random.randint(0, len(self.noise) - dim + 1)
+        return rng.randint(0, len(self.noise) - dim + 1)
