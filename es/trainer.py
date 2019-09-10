@@ -17,7 +17,7 @@ class ESConfig(object):
     """ Configures the ES setup """
     def __init__(self, fitness_config, training_steps=100, step_size=0.01, noise_size=250000000,
                  num_workers=2, evaluations_per_batch=100, l2_coefficient=0.005, noise_std_dev=0.02,
-                 experiment_dir=None, save_t=0):
+                 experiment_dir=None, save_t=0, seed=1):
         """
         Configuration container.
 
@@ -36,6 +36,7 @@ class ESConfig(object):
                                    If None, nothing will be saved
             save_t(`int`): number of training steps between saving the solution. if 0, solutions are never saved.
                            Note, that the experiment_dir parameter must not be None in order to save.
+            seed(`int`): Seed for the noise table sampling.
         """
         self.fitness_config = fitness_config
         self.training_steps = training_steps
@@ -47,6 +48,7 @@ class ESConfig(object):
         self.noise_std_dev = noise_std_dev
         self.experiment_dir = experiment_dir
         self.save_t = save_t
+        self.seed = seed
 
     @classmethod
     def from_json(cls, path):
@@ -96,7 +98,7 @@ class ESTrainer(object):
         # Create the shared noise table.
         print("Creating shared noise table.")
         noise_id = create_shared_noise.remote(config.noise_size)
-        self.noise = SharedNoiseTable(ray.get(noise_id))
+        self.noise = SharedNoiseTable(ray.get(noise_id), seed=config.seed)
 
         # Create the actors.
         print("Creating actors.")

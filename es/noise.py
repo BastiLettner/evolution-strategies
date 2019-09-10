@@ -12,6 +12,9 @@ def create_shared_noise(count):
     Ray lets us distribute the noise table across a cluster.
     The trainer will create this table and stores it in the rays object store.
 
+    The seed is fixed for this table. The seed for sampling from the table can
+    be specified per run.
+
     Args:
         count(`int`): Size of the shared noise table
 
@@ -24,7 +27,7 @@ def create_shared_noise(count):
 
 
 class SharedNoiseTable(object):
-    def __init__(self, noise):
+    def __init__(self, noise, seed=1):
         """
         Construct Noise table.
 
@@ -32,6 +35,7 @@ class SharedNoiseTable(object):
             noise(`np.array`): The noise array
         """
         self.noise = noise
+        self.random = np.random.RandomState(seed=seed)
         assert self.noise.dtype == np.float32
 
     def get(self, i, dim):
@@ -58,4 +62,4 @@ class SharedNoiseTable(object):
         Returns:
             index(`int`)
         """
-        return np.random.randint(0, len(self.noise) - dim + 1)
+        return self.random.randint(0, len(self.noise) - dim + 1)
