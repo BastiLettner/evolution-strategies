@@ -59,7 +59,6 @@ class Worker(object):
         while len(noise_indices) == 0 or time.time() - task_t_start < self.min_task_runtime:
 
             noise_index = self.noise.sample_index(dim=self.solution_size, rng=self.rng)
-            print('worker {} sampled index {}'.format(0, noise_index))
 
             perturbation = self.config.noise_std_dev * self.noise.get(noise_index, self.solution_size)
 
